@@ -1,0 +1,9 @@
+[package]
+name = "core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+clap = { version =  "4.0.27", features = ["derive", "env"] }
+thiserror = "1.0.37"
