@@ -7,9 +7,9 @@ pub enum BError {
     #[error(
         "Couldnt merge blocks {0} and {1} with sizes {2} and {3} and addresses ({4}, {5}) and ({6}, {7})"
     )]
-    Merge(BlockId, BlockId, usize, usize, usize, usize, usize, usize),
+    Merge(BlockId, BlockId, u64, u64, u64, u64, u64, u64),
     #[error("Couldnt take {0} bytes from block {1} with size {2} and address ({3}, {4})")]
-    Take(usize, BlockId, usize, usize, usize),
+    Take(u64, BlockId, u64, u64, u64),
 }
 
 impl BError {
@@ -26,7 +26,7 @@ impl BError {
         )
     }
 
-    pub fn take(b1: &Block, size: usize) -> Self {
+    pub fn take(b1: &Block, size: u64) -> Self {
         Self::Take(size, b1.id.clone(), b1.size, b1.start_addr, b1.end_addr)
     }
 }
@@ -34,7 +34,24 @@ impl BError {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BlockId {
     Free,
-    Used(usize),
+    Used(u64),
+}
+
+impl PartialOrd for BlockId {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match (self, other) {
+            (BlockId::Free, BlockId::Free) => Some(std::cmp::Ordering::Equal),
+            (BlockId::Free, BlockId::Used(_)) => Some(std::cmp::Ordering::Less),
+            (BlockId::Used(_), BlockId::Free) => Some(std::cmp::Ordering::Greater),
+            (BlockId::Used(a), BlockId::Used(b)) => a.partial_cmp(b),
+        }
+    }
+}
+
+impl Ord for BlockId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
 
 impl std::fmt::Display for BlockId {
@@ -48,13 +65,22 @@ impl std::fmt::Display for BlockId {
 
 pub struct Block {
     pub id: BlockId,
-    pub size: usize,
-    pub start_addr: usize,
-    pub end_addr: usize,
+    pub size: u64,
+    pub start_addr: u64,
+    pub end_addr: u64,
 }
 
 impl Block {
-    pub fn new(id: usize, start_addr: usize, size: usize) -> Self {
+    pub fn new(id: BlockId, start_addr: u64, size: u64) -> Self {
+        Self {
+            id,
+            size,
+            start_addr,
+            end_addr: start_addr + size - 1,
+        }
+    }
+
+    pub fn new_used(id: u64, start_addr: u64, size: u64) -> Self {
         Self {
             id: BlockId::Used(id),
             size,
@@ -63,7 +89,7 @@ impl Block {
         }
     }
 
-    pub fn new_free(start_addr: usize, size: usize) -> Self {
+    pub fn new_free(start_addr: u64, size: u64) -> Self {
         Self {
             id: BlockId::Free,
             size,
@@ -73,8 +99,8 @@ impl Block {
     }
 
     pub fn can_merge(&self, other: &Block) -> bool {
-        self.end_addr == other.start_addr - 1
-            || self.start_addr == other.end_addr - 1
+        other.start_addr == self.end_addr + 1
+            || self.start_addr == other.end_addr + 1
                 && self.id == BlockId::Free
                 && other.id == BlockId::Free
     }
@@ -107,12 +133,12 @@ impl Block {
         }
     }
 
-    pub fn take(&mut self, size: usize) -> BResult<Block> {
+    pub fn take(&mut self, id: u64, size: u64) -> BResult<Block> {
         if !(self.id == BlockId::Free && self.size >= size) {
             return Err(BError::take(self, size));
         };
 
-        let new_block = Block::new_free(self.start_addr, size);
+        let new_block = Block::new_used(id, self.start_addr, size);
         self.start_addr += size;
         self.size -= size;
         Ok(new_block)
@@ -120,6 +146,31 @@ impl Block {
 
     pub fn as_free(&self) -> Block {
         Block::new_free(self.start_addr, self.size)
+    }
+
+    pub fn relocate(&mut self, new_start_addr: u64) {
+        self.start_addr = new_start_addr;
+        self.end_addr = new_start_addr + self.size - 1;
+    }
+
+    pub fn contains_addr(&self, addr: u64) -> bool {
+        self.start_addr <= addr && addr <= self.end_addr
+    }
+
+    pub fn cmp_start_addr(&self, other: &Block) -> std::cmp::Ordering {
+        self.start_addr.cmp(&other.start_addr)
+    }
+
+    pub fn cmp_end_addr(&self, other: &Block) -> std::cmp::Ordering {
+        self.end_addr.cmp(&other.end_addr)
+    }
+
+    pub fn cmp_size(&self, other: &Block) -> std::cmp::Ordering {
+        self.size.cmp(&other.size)
+    }
+
+    pub fn cmp_id(&self, other: &Block) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
     }
 }
 
@@ -136,7 +187,7 @@ mod block_tests {
 
     #[test]
     fn test_used_creation() {
-        let b1 = super::Block::new(0, 0, 10);
+        let b1 = super::Block::new_used(0, 0, 10);
         assert_eq!(b1.id, super::BlockId::Used(0));
         assert_eq!(b1.size, 10);
         assert_eq!(b1.start_addr, 0);
@@ -147,7 +198,10 @@ mod block_tests {
     fn test_can_merge() {
         let b1 = super::Block::new_free(0, 100);
         let b2 = super::Block::new_free(100, 100);
+        let b3 = super::Block::new_free(250, 100);
+
         assert_eq!(b1.can_merge(&b2), true);
+        assert_eq!(b1.can_merge(&b3), false);
     }
 
     #[test]
