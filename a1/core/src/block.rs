@@ -63,6 +63,7 @@ impl std::fmt::Display for BlockId {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Block {
     pub id: BlockId,
     pub size: u64,

@@ -38,7 +38,7 @@ impl Simulation {
                 CmdType::Alloc => {
                     let block_id = cmd.block_id.unwrap();
                     let size = cmd.size.unwrap();
-                    self.area.alloc(block_id, size);
+                    self.area.alloc_first_fit(block_id, size);
                 }
                 CmdType::Dealloc => {
                     let block_id = cmd.block_id.unwrap();

@@ -33,15 +33,14 @@ impl Area {
         }
     }
 
-    pub fn alloc(&mut self, block_id: u64, size: u64) -> AResult<()> {
-        let mut free_block = None;
-        for block in self.free_blocks.iter_mut() {
-            if block.size >= size {
-                free_block = Some(block);
-                break;
-            }
-        }
-
+    fn alloc<F: Fn(&mut Vec<Block>) -> Option<&mut Block>>(
+        &mut self,
+        // free_block: Option<&mut Block>,
+        block_id: u64,
+        size: u64,
+        fun: F,
+    ) -> AResult<()> {
+        let free_block = fun(self.free_blocks.as_mut());
         match free_block {
             Some(block) => {
                 let new_block = block.take(block_id, size);
@@ -59,6 +58,24 @@ impl Area {
                 self.free_blocks.iter().map(|b| b.size).sum(),
             )),
         }
+    }
+
+    pub fn alloc_first_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
+        self.alloc(block_id, size, |blocks| {
+            blocks.iter_mut().find(|b| b.size >= size)
+        })
+    }
+
+    pub fn alloc_best_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
+        self.alloc(block_id, size, |blocks| {
+            blocks.iter_mut().min_by_key(|b| b.size)
+        })
+    }
+
+    pub fn alloc_worst_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
+        self.alloc(block_id, size, |blocks| {
+            blocks.iter_mut().max_by_key(|b| b.size)
+        })
     }
 
     pub fn dealloc(&mut self, block_id: u64) -> AResult<()> {
@@ -121,17 +138,17 @@ impl Area {
             offset += block.size;
         }
 
-        let total_free_memory = self
-            .free_blocks
-            .iter()
-            .map(|b| b.size)
-            .fold(0, |acc, x| acc + x);
+        let total_free_memory = self.calc_free_memory();
         let total_free_memory_block =
-            Block::new_free(self.size - total_free_memory - 1, total_free_memory);
+            Block::new_free(self.size - total_free_memory, total_free_memory);
 
         self.used_blocks = new_used_blocks;
         self.free_blocks = vec![total_free_memory_block];
         Ok(())
+    }
+
+    fn calc_free_memory(&self) -> u64 {
+        self.free_blocks.iter().map(|b| b.size).sum()
     }
 }
 
@@ -139,41 +156,41 @@ mod mem_tests {
 
     #[test]
     fn test_alloc_missing_memory() {
-        let mut mem = super::Area::new(100);
-        mem.alloc(1, 10).unwrap();
-        mem.alloc(2, 80).unwrap();
-        assert_eq!(mem.alloc(3, 20).is_err(), true);
+        let mut area = super::Area::new(100);
+        area.alloc_first_fit(1, 10).unwrap();
+        area.alloc_first_fit(2, 80).unwrap();
+        assert_eq!(area.alloc_first_fit(3, 20).is_err(), true);
     }
 
     #[test]
     fn test_alloc() {
-        let mut mem = super::Area::new(100);
-        mem.alloc(1, 10).unwrap();
-        mem.alloc(2, 80).unwrap();
-        assert_eq!(mem.alloc(3, 10).is_ok(), true);
+        let mut area = super::Area::new(100);
+        area.alloc_first_fit(1, 10).unwrap();
+        area.alloc_first_fit(2, 80).unwrap();
+        assert_eq!(area.alloc_first_fit(3, 10).is_ok(), true);
     }
 
     #[test]
     fn test_alloc_memory_addresses() {
-        let mut mem = super::Area::new(100);
-        mem.alloc(1, 10).unwrap();
-        mem.alloc(2, 80).unwrap();
-        mem.alloc(3, 10).unwrap();
-        assert_eq!(mem.used_blocks[0].start_addr, 0);
-        assert_eq!(mem.used_blocks[0].end_addr, 9);
-        assert_eq!(mem.used_blocks[1].start_addr, 10);
-        assert_eq!(mem.used_blocks[1].end_addr, 89);
-        assert_eq!(mem.used_blocks[2].start_addr, 90);
-        assert_eq!(mem.used_blocks[2].end_addr, 99);
+        let mut area = super::Area::new(100);
+        area.alloc_first_fit(1, 10).unwrap();
+        area.alloc_first_fit(2, 80).unwrap();
+        area.alloc_first_fit(3, 10).unwrap();
+        assert_eq!(area.used_blocks[0].start_addr, 0);
+        assert_eq!(area.used_blocks[0].end_addr, 9);
+        assert_eq!(area.used_blocks[1].start_addr, 10);
+        assert_eq!(area.used_blocks[1].end_addr, 89);
+        assert_eq!(area.used_blocks[2].start_addr, 90);
+        assert_eq!(area.used_blocks[2].end_addr, 99);
     }
 
     #[test]
     fn test_compact() {
         let mut area = super::Area::new(100);
-        area.alloc(1, 10).unwrap();
-        area.alloc(2, 30).unwrap();
-        area.alloc(3, 20).unwrap();
-        area.alloc(4, 40).unwrap();
+        area.alloc_first_fit(1, 10).unwrap();
+        area.alloc_first_fit(2, 30).unwrap();
+        area.alloc_first_fit(3, 20).unwrap();
+        area.alloc_first_fit(4, 40).unwrap();
 
         // | 1: 10 |
         // | 2: 30 |
