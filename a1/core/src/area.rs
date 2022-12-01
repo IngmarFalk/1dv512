@@ -35,7 +35,6 @@ impl Area {
 
     fn alloc<F: Fn(&mut Vec<Block>) -> Option<&mut Block>>(
         &mut self,
-        // free_block: Option<&mut Block>,
         block_id: u64,
         size: u64,
         fun: F,
@@ -123,6 +122,17 @@ impl Area {
         let first_free_block = self.free_blocks.get(0).unwrap();
         let mut offset = 0;
         let mut new_used_blocks = vec![];
+        let _bs = self
+            .used_blocks
+            .iter()
+            .map(|b| {
+                offset += b.size;
+                match b.start_addr >= first_free_block.start_addr {
+                    true => Block::new(b.id.clone(), first_free_block.start_addr + offset, b.size),
+                    false => Block::new(b.id.clone(), b.start_addr, b.size),
+                }
+            })
+            .collect::<Vec<Block>>();
 
         for block in self.used_blocks.iter() {
             match block.start_addr > first_free_block.start_addr {
