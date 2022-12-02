@@ -174,15 +174,14 @@ impl Block {
         }
     }
 
-    pub fn take(&mut self, id: u64, size: u64) -> BResult<Block> {
+    pub fn take(&self, id: u64, size: u64) -> BResult<(Block, Block)> {
         if !(self.id == BlockId::Free && self.size >= size) {
             return Err(BError::take(self, size));
         };
 
         let new_block = Block::new_used(id, self.start_addr, size);
-        self.start_addr += size;
-        self.size -= size;
-        Ok(new_block)
+        let new_free_block = Block::new_free(self.start_addr + size, self.size - size);
+        Ok((new_block, new_free_block))
     }
 
     pub fn as_free(&self) -> Block {
@@ -196,6 +195,10 @@ impl Block {
 
     pub fn contains_addr(&self, addr: u64) -> bool {
         self.start_addr <= addr && addr <= self.end_addr
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
     }
 
     pub fn cmp_start_addr(&self, other: &Block) -> std::cmp::Ordering {
@@ -212,6 +215,22 @@ impl Block {
 
     pub fn cmp_id(&self, other: &Block) -> std::cmp::Ordering {
         self.id.cmp(&other.id)
+    }
+}
+
+impl std::fmt::Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Block {{ id: {}, size: {}, start_addr: {}, end_addr: {} }}",
+            self.id, self.size, self.start_addr, self.end_addr
+        )
+    }
+}
+
+impl PartialEq for Block {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id && self.size == other.size && self.start_addr == other.start_addr
     }
 }
 

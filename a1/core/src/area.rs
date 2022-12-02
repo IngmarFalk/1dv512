@@ -18,6 +18,7 @@ pub enum AError {
     BlockError(#[from] crate::block::BError),
 }
 
+#[derive(Debug, Clone)]
 pub struct Area {
     pub free_blocks: Vec<Block>,
     pub used_blocks: Vec<Block>,
@@ -33,19 +34,19 @@ impl Area {
         }
     }
 
-    fn alloc<F: Fn(&mut Vec<Block>) -> Option<&mut Block>>(
+    fn alloc<F: Fn(Vec<Block>) -> Option<Block>>(
         &mut self,
         block_id: u64,
         size: u64,
         fun: F,
     ) -> AResult<()> {
-        let free_block = fun(self.free_blocks.as_mut());
+        let free_block = fun(self.free_blocks.clone());
         match free_block {
             Some(block) => {
-                let new_block = block.take(block_id, size);
-                match new_block {
-                    Ok(new_block) => {
-                        self.used_blocks.push(new_block);
+                let new_blocks = block.take(block_id, size);
+                match new_blocks {
+                    Ok(blocks) => {
+                        self.take_from_free(&block, blocks);
                         Ok(())
                     }
                     Err(e) => Err(e.into()),
@@ -61,19 +62,19 @@ impl Area {
 
     pub fn alloc_first_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
         self.alloc(block_id, size, |blocks| {
-            blocks.iter_mut().find(|b| b.size >= size)
+            blocks.iter().find(|b| b.size >= size).cloned()
         })
     }
 
     pub fn alloc_best_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
         self.alloc(block_id, size, |blocks| {
-            blocks.iter_mut().min_by_key(|b| b.size)
+            blocks.iter().min_by_key(|b| b.size).cloned()
         })
     }
 
     pub fn alloc_worst_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
         self.alloc(block_id, size, |blocks| {
-            blocks.iter_mut().max_by_key(|b| b.size)
+            blocks.iter().max_by_key(|b| b.size).cloned()
         })
     }
 
@@ -89,22 +90,13 @@ impl Area {
         match used_block_idx {
             Some(i) => {
                 let block = self.used_blocks.remove(i);
-                let mut mergable_block = None;
-                for free_block in self.free_blocks.iter_mut() {
-                    if free_block.can_merge(&block) {
-                        mergable_block = Some(free_block);
-                        break;
-                    }
-                }
+                let mergable_block = self.free_blocks.iter_mut().find(|b| b.can_merge(&block));
                 match mergable_block {
-                    Some(b) => {
-                        b.merge(block);
-                        Ok(())
-                    }
-                    None => {
-                        self.free_blocks.push(block);
-                        Ok(())
-                    }
+                    Some(b) => match b.merge_replace(block) {
+                        Ok(_) => Ok(()),
+                        Err(e) => Err(e.into()),
+                    },
+                    None => Ok(self.free_blocks.push(block.as_free())),
                 }
             }
             None => Err(AError::Dealloc(BlockId::Used(block_id))),
@@ -122,9 +114,9 @@ impl Area {
         let first_free_block = self.free_blocks.get(0).unwrap();
         let mut offset = 0;
         let mut new_used_blocks = vec![];
-        let _bs = self
-            .used_blocks
-            .iter()
+
+        let _itr = self.used_blocks.iter();
+        let _bs = _itr
             .map(|b| {
                 offset += b.size;
                 match b.start_addr >= first_free_block.start_addr {
@@ -159,6 +151,38 @@ impl Area {
 
     fn calc_free_memory(&self) -> u64 {
         self.free_blocks.iter().map(|b| b.size).sum()
+    }
+
+    fn take_from_free(&mut self, free_block: &Block, new_blocks: (Block, Block)) {
+        let idx = self
+            .free_blocks
+            .iter()
+            .position(|b| b == free_block)
+            .unwrap();
+        self.free_blocks.remove(idx);
+
+        self.used_blocks.push(new_blocks.0);
+        if new_blocks.1.size > 0 {
+            self.free_blocks.push(new_blocks.1);
+        }
+    }
+
+    pub fn as_byte_array(&self) -> Vec<u8> {
+        let mut bytes = vec![0; self.size as usize];
+        let mut blocks: Vec<&Block> = self
+            .used_blocks
+            .iter()
+            .chain(self.free_blocks.iter())
+            .collect();
+        blocks.sort_by(|a, b| a.cmp_start_addr(&b));
+        for block in blocks {
+            for i in block.start_addr..=block.end_addr {
+                if let BlockId::Used(_) = block.id {
+                    bytes[i as usize] = 1
+                }
+            }
+        }
+        bytes
     }
 }
 
@@ -226,5 +250,27 @@ mod mem_tests {
         assert_eq!(area.free_blocks[0].size, 30);
         assert_eq!(area.used_blocks[0].size, 30);
         assert_eq!(area.used_blocks[1].size, 40);
+    }
+
+    #[test]
+    fn test_byte_array() {
+        let mut area = super::Area::new(100);
+        area.alloc_first_fit(1, 10).unwrap();
+        area.alloc_first_fit(2, 30).unwrap();
+        area.alloc_first_fit(3, 20).unwrap();
+        area.alloc_first_fit(4, 40).unwrap();
+
+        area.dealloc(1).unwrap();
+        area.dealloc(3).unwrap();
+
+        let bytes = area.as_byte_array();
+        assert_eq!(bytes[0], 0);
+        assert_eq!(bytes[9], 0);
+        assert_eq!(bytes[10], 1);
+        assert_eq!(bytes[39], 1);
+        assert_eq!(bytes[40], 0);
+        assert_eq!(bytes[59], 0);
+        assert_eq!(bytes[60], 1);
+        assert_eq!(bytes[99], 1);
     }
 }

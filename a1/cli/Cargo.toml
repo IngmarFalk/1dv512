@@ -1,5 +1,5 @@
 [package]
-name = "cli"
+name = "simulate"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,4 @@ edition = "2021"
 
 core = { path = "../core" }
 dotenv = "0.15.0"
-clap = { version = "4.0.29", features = ["derive", "env"] }
+clap = { version = "4.0.29", features = ["derive", "env", "cargo"] }

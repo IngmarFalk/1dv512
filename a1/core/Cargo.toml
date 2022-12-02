@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 
-clap = { version =  "4.0.27", features = ["derive", "env"] }
+clap = { version =  "4.0.27", features = ["derive", "env", "cargo"] }
 thiserror = "1.0.37"
