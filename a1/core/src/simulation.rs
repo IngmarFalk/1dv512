@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::{
     area::Area,
     cmd::{Cmd, CmdType, ParseError, ParseResult},
@@ -9,8 +11,7 @@ impl Simulator {
     pub fn new(files: Vec<&str>, run_option: RunOption) -> Self {
         let mut simulations = vec![];
         for file in files {
-            let mut simulation = Simulation::new(file, run_option.clone());
-            simulation.run();
+            let simulation = Simulation::new(file, run_option.clone());
             simulations.push(simulation);
         }
         Self(simulations)
@@ -47,7 +48,7 @@ impl From<(bool, bool, bool, bool)> for RunOption {
     }
 }
 
-pub struct Simulation(Vec<Run>);
+pub struct Simulation(Vec<Run>, String);
 
 impl Simulation {
     pub fn new(file: &str, ty: RunOption) -> Self {
@@ -77,22 +78,62 @@ impl Simulation {
                 vec![worst_fit_run]
             }
         };
-        Simulation(runs)
+        Simulation(runs, file.to_owned())
     }
 
     pub fn run(&mut self) {
-        for run in self.0.iter_mut() {
-            run.run();
+        let areas = self
+            .0
+            .iter_mut()
+            .map(|r| r.run())
+            .collect::<Vec<(Area, AllocationMethod)>>();
+        let mut out_string = String::new();
+        for (area, method) in areas.iter() {
+            let method_str = method.to_string();
+            let used_blocks = area
+                .used_blocks
+                .iter()
+                .map(|b| b.to_string())
+                .collect::<Vec<String>>()
+                .join("\n");
+            let free_blocks = area
+                .free_blocks
+                .iter()
+                .map(|b| b.to_string())
+                .collect::<Vec<String>>()
+                .join("\n");
+            let fragmentation = area.fragmentation();
+            out_string.push_str(&format!(
+                "{}\nUsed Blocks:\n{}\nFree Blocks:\n{}\nFragmentation:\n{}\n",
+                method_str, used_blocks, free_blocks, fragmentation
+            ));
+            let file_name = self.1.clone();
+            let mut out_file = std::fs::File::create(format!("{}_out.txt", file_name)).unwrap();
+            let mut raw_file = std::fs::File::create(format!("{}_raw_out.txt", file_name)).unwrap();
+            out_file.write_all(out_string.as_bytes()).unwrap();
+            raw_file
+                .write_all(format!("{:#?}", area).as_bytes())
+                .unwrap();
         }
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub enum AllocationMethod {
     #[default]
     FirstFit,
     BestFit,
     WorstFit,
+}
+
+impl std::fmt::Display for AllocationMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::FirstFit => write!(f, "First Fit"),
+            Self::BestFit => write!(f, "Best Fit"),
+            Self::WorstFit => write!(f, "Worst Fit"),
+        }
+    }
 }
 
 pub struct Run {
@@ -133,10 +174,15 @@ impl Run {
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> (Area, AllocationMethod) {
         for cmd in self.cmds.iter() {
             match cmd.ty {
                 CmdType::Alloc => {
+                    println!(
+                        "Allocating block {} with {} bytes",
+                        cmd.block_id.unwrap(),
+                        cmd.size.unwrap()
+                    );
                     let block_id = cmd.block_id.unwrap();
                     let size = cmd.size.unwrap();
                     let res = match self.method {
@@ -150,6 +196,7 @@ impl Run {
                     }
                 }
                 CmdType::Dealloc => {
+                    println!("Deallocating block {}.", cmd.block_id.unwrap());
                     let block_id = cmd.block_id.unwrap();
                     match self.area.dealloc(block_id) {
                         Ok(_) => (),
@@ -162,6 +209,8 @@ impl Run {
                 },
             }
         }
+        println!("Fragmentation: {}.", self.area.fragmentation());
+        (self.area.clone(), self.method.clone())
     }
 }
 

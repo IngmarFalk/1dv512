@@ -1,0 +1,35 @@
+Area {
+    free_blocks: [
+        Block {
+            id: Free,
+            size: 600,
+            start_addr: 100,
+            end_addr: 699,
+        },
+        Block {
+            id: Free,
+            size: 100,
+            start_addr: 900,
+            end_addr: 999,
+        },
+    ],
+    used_blocks: [
+        Block {
+            id: Used(
+                0,
+            ),
+            size: 100,
+            start_addr: 0,
+            end_addr: 99,
+        },
+        Block {
+            id: Used(
+                3,
+            ),
+            size: 200,
+            start_addr: 700,
+            end_addr: 899,
+        },
+    ],
+    size: 1000,
+}

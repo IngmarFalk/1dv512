@@ -184,6 +184,13 @@ impl Area {
         }
         bytes
     }
+
+    pub fn fragmentation(&self) -> f64 {
+        let largest_block = self.free_blocks.iter().max_by_key(|b| b.size).unwrap().size;
+        let free_memory = self.calc_free_memory();
+        let fragmentation = 1f64 - (largest_block as f64 / free_memory as f64);
+        fragmentation
+    }
 }
 
 mod mem_tests {
@@ -202,6 +209,19 @@ mod mem_tests {
         area.alloc_first_fit(1, 10).unwrap();
         area.alloc_first_fit(2, 80).unwrap();
         assert_eq!(area.alloc_first_fit(3, 10).is_ok(), true);
+    }
+
+    #[test]
+    fn test_dealloc() {
+        let mut area = super::Area::new(100);
+        area.alloc_first_fit(1, 10).unwrap();
+        area.alloc_first_fit(2, 40).unwrap();
+        area.dealloc(1).unwrap();
+        assert_eq!(area.free_blocks.len(), 2);
+        area.alloc_first_fit(3, 40).unwrap();
+        area.dealloc(2).unwrap();
+        assert_eq!(area.free_blocks.len(), 2);
+        assert_eq!(area.used_blocks.len(), 1);
     }
 
     #[test]
@@ -272,5 +292,19 @@ mod mem_tests {
         assert_eq!(bytes[59], 0);
         assert_eq!(bytes[60], 1);
         assert_eq!(bytes[99], 1);
+    }
+
+    #[test]
+    fn test_example_scenario() {
+        let mut area = super::Area::new(1000);
+        area.alloc_first_fit(0, 100).unwrap();
+        area.alloc_first_fit(1, 100).unwrap();
+        area.alloc_first_fit(2, 500).unwrap();
+        area.dealloc(1).unwrap();
+        area.alloc_first_fit(3, 200).unwrap();
+        area.dealloc(2).unwrap();
+        assert_eq!(area.fragmentation(), 0.1428571428571429);
+        assert_eq!(area.free_blocks.len(), 2);
+        assert_eq!(area.used_blocks.len(), 2);
     }
 }

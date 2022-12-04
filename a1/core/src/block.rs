@@ -4,43 +4,43 @@ use thiserror::Error;
 
 pub type BResult<T> = std::result::Result<T, BError>;
 
-pub struct Addr(u64);
+// pub struct Addr(u64);
 
-impl Into<u64> for Addr {
-    fn into(self) -> u64 {
-        self.0
-    }
-}
+// impl Into<u64> for Addr {
+//     fn into(self) -> u64 {
+//         self.0
+//     }
+// }
 
-impl<V> Add<V> for Addr
-where
-    V: Into<u64>,
-{
-    type Output = Self;
+// impl<V> Add<V> for Addr
+// where
+//     V: Into<u64>,
+// {
+//     type Output = Self;
 
-    fn add(self, rhs: V) -> Self::Output {
-        Self(self.0 + rhs.into())
-    }
-}
+//     fn add(self, rhs: V) -> Self::Output {
+//         Self(self.0 + rhs.into())
+//     }
+// }
 
-pub struct Size(u64);
+// pub struct Size(u64);
 
-impl Into<u64> for Size {
-    fn into(self) -> u64 {
-        self.0
-    }
-}
+// impl Into<u64> for Size {
+//     fn into(self) -> u64 {
+//         self.0
+//     }
+// }
 
-impl<V> Add<V> for Size
-where
-    V: Into<u64>,
-{
-    type Output = Self;
+// impl<V> Add<V> for Size
+// where
+//     V: Into<u64>,
+// {
+//     type Output = Self;
 
-    fn add(self, rhs: V) -> Self::Output {
-        Self(self.0 + rhs.into())
-    }
-}
+//     fn add(self, rhs: V) -> Self::Output {
+//         Self(self.0 + rhs.into())
+//     }
+// }
 
 #[derive(Debug, Error)]
 pub enum BError {
@@ -220,11 +220,7 @@ impl Block {
 
 impl std::fmt::Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Block {{ id: {}, size: {}, start_addr: {}, end_addr: {} }}",
-            self.id, self.size, self.start_addr, self.end_addr
-        )
+        write!(f, "{};{};{}", self.id, self.start_addr, self.end_addr)
     }
 }
 
