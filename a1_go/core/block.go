@@ -17,21 +17,11 @@ func Sub[U Size | Address, V Size | Address](a U, b V) U {
 	return U(int(a) - int(b))
 }
 
-type Data struct {
+type Block struct {
+	id         Id
 	size       Size
 	start_addr Address
 	end_addr   Address
-}
-
-func (d *Data) New(size Size, start_addr Address) {
-	d.size = size
-	d.start_addr = start_addr
-	d.end_addr = Add(start_addr, size)
-}
-
-type Block struct {
-	id   Id
-	data Data
 }
 
 type BlockList struct {
@@ -60,7 +50,7 @@ func (b *BlockList) Len() int {
 
 func (b *BlockList) FindFreeBlock(size Size) (int, bool) {
 	for i, block := range b.blocks {
-		if block.id == Free && block.data.size >= size {
+		if block.id == Free && block.size >= size {
 			return i, true
 		}
 	}
@@ -69,7 +59,7 @@ func (b *BlockList) FindFreeBlock(size Size) (int, bool) {
 
 func (b *BlockList) FindUsedBlock(addr Address) (int, bool) {
 	for i, block := range b.blocks {
-		if block.id == Used && block.data.start_addr <= addr && block.data.end_addr > addr {
+		if block.id == Used && block.start_addr <= addr && block.end_addr > addr {
 			return i, true
 		}
 	}
