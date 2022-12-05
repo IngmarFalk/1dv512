@@ -220,7 +220,10 @@ impl Block {
 
 impl std::fmt::Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{};{};{}", self.id, self.start_addr, self.end_addr)
+        match self.id {
+            BlockId::Free => write!(f, "{};{}", self.start_addr, self.end_addr),
+            BlockId::Used(id) => write!(f, "{};{};{}", id, self.start_addr, self.end_addr),
+        }
     }
 }
 

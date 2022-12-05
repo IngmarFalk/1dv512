@@ -3,7 +3,25 @@ Used Blocks:
 0;0;99
 3;700;899
 Free Blocks:
-Free;100;699
-Free;900;999
+100;699
+900;999
+Fragmentation:
+0.1428571428571429
+Best Fit
+Used Blocks:
+0;0;99
+3;700;899
+Free Blocks:
+100;699
+900;999
+Fragmentation:
+0.1428571428571429
+Worst Fit
+Used Blocks:
+0;0;99
+3;700;899
+Free Blocks:
+100;699
+900;999
 Fragmentation:
 0.1428571428571429

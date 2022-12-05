@@ -3,9 +3,17 @@ package core
 type Option int
 
 const (
+	None Option = -1
 	Some Option = iota
-	None
 )
+
+func (o *Option) IsSome() bool {
+	return *o != None
+}
+
+func (o *Option) IsNone() bool {
+	return *o == None
+}
 
 type Op string
 
@@ -16,37 +24,51 @@ const (
 )
 
 type Cmd struct {
-	op       Op
-	block_id Option
-	size     Option
+	Op      Op
+	BlockID Option
+	Size    Option
 }
 
-func (c *Cmd) New(op Op, block_id Option, size Option) {
-	c.op = op
-	c.block_id = block_id
-	c.size = size
+func New(op Op, blockID Option, size Option) Cmd {
+	return Cmd{
+		Op:      op,
+		BlockID: blockID,
+		Size:    size,
+	}
+}
+
+func NewAlloc(blockID Id, size Size) Cmd {
+	return New(Alloc, Option(blockID), Option(size))
+}
+
+func NewDealloc(blockID Id) Cmd {
+	return New(Dealloc, Option(blockID), None)
+}
+
+func NewCompact() Cmd {
+	return New(Compact, None, None)
 }
 
 type CmdList struct {
-	cmds []Cmd
+	Cmds []Cmd
 }
 
 func (c *CmdList) New() {
-	c.cmds = make([]Cmd, 0)
+	c.Cmds = make([]Cmd, 0)
 }
 
 func (c *CmdList) Add(cmd Cmd) {
-	c.cmds = append(c.cmds, cmd)
+	c.Cmds = append(c.Cmds, cmd)
 }
 
 func (c *CmdList) Remove(index int) {
-	c.cmds = append(c.cmds[:index], c.cmds[index+1:]...)
+	c.Cmds = append(c.Cmds[:index], c.Cmds[index+1:]...)
 }
 
 func (c *CmdList) Get(index int) Cmd {
-	return c.cmds[index]
+	return c.Cmds[index]
 }
 
 func (c *CmdList) Len() int {
-	return len(c.cmds)
+	return len(c.Cmds)
 }

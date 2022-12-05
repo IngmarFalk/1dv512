@@ -1,17 +1,30 @@
 package main
 
 import (
-	"io"
-	"log"
-	"net/http"
+	"fmt"
+
+	"github.com/ingmarrr/goa1/core"
+	"github.com/ingmarrr/goa1/rw"
 )
 
 func main() {
-	helloHandler := func(w http.ResponseWriter, req *http.Request) {
-		io.WriteString(w, "Hello, world!\n")
+	data := rw.ReadFile("test.txt")
+	size, cmds := rw.ToCmdList(data)
+	ops := map[string]func(size core.Size, blocks core.BlockList) int{
+		"FirstFit": core.FirstFit,
+		"BestFit":  core.BestFit,
+		"WorstFit": core.WorstFit,
 	}
 
-	http.HandleFunc("/hello", helloHandler)
-	log.Println("Listing for requests at http://localhost:8000/hello")
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	dat := ""
+	for key, op := range ops {
+		mem := core.NewMemory(core.Size(size))
+		for _, cmd := range cmds.Cmds {
+			mem.Execute(cmd, op)
+		}
+		dat += key + ":\n" + mem.String() + "\n"
+		fmt.Println(dat)
+	}
+	rw.WriteFile("test_out.txt", dat)
+
 }

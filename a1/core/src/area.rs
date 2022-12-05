@@ -68,7 +68,22 @@ impl Area {
 
     pub fn alloc_best_fit(&mut self, block_id: u64, size: u64) -> AResult<()> {
         self.alloc(block_id, size, |blocks| {
-            blocks.iter().min_by_key(|b| b.size).cloned()
+            let mut out: Option<Block> = None;
+            for block in blocks {
+                if block.size >= size {
+                    match out {
+                        Some(ref mut b) => {
+                            if block.size < b.size {
+                                *b = block.clone();
+                            }
+                        }
+                        None => {
+                            out = Some(block.clone());
+                        }
+                    }
+                }
+            }
+            out
         })
     }
 
@@ -189,6 +204,10 @@ impl Area {
         let largest_block = self.free_blocks.iter().max_by_key(|b| b.size).unwrap().size;
         let free_memory = self.calc_free_memory();
         let fragmentation = 1f64 - (largest_block as f64 / free_memory as f64);
+        println!(
+            "largest block: {}, free memory: {}, fragmentation: {}",
+            largest_block, free_memory, fragmentation
+        );
         fragmentation
     }
 }
@@ -295,7 +314,7 @@ mod mem_tests {
     }
 
     #[test]
-    fn test_example_scenario() {
+    fn test_example_scenario_ff() {
         let mut area = super::Area::new(1000);
         area.alloc_first_fit(0, 100).unwrap();
         area.alloc_first_fit(1, 100).unwrap();
@@ -306,5 +325,21 @@ mod mem_tests {
         assert_eq!(area.fragmentation(), 0.1428571428571429);
         assert_eq!(area.free_blocks.len(), 2);
         assert_eq!(area.used_blocks.len(), 2);
+    }
+
+    #[test]
+    fn test_example_scenario_bf() {
+        let mut area = super::Area::new(1000);
+        area.alloc_best_fit(0, 100).unwrap();
+        area.alloc_best_fit(1, 100).unwrap();
+        area.alloc_best_fit(2, 500).unwrap();
+        area.dealloc(1).unwrap();
+        area.alloc_best_fit(3, 200).unwrap();
+        area.dealloc(2).unwrap();
+        assert_eq!(area.fragmentation(), 0.1428571428571429);
+        assert_eq!(area.free_blocks.len(), 2);
+        assert_eq!(area.used_blocks.len(), 2);
+
+        println!("{:#?}", area);
     }
 }
