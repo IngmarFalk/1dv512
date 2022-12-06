@@ -24,9 +24,13 @@ class Memory:
         self.used_blocks = []
 
     def __str__(self) -> str:
-        used: str = "".join([str(block) for block in self.used_blocks])
-        free: str = "".join([str(block) for block in self.free_blocks])
-        return f"Size: {self.size}\nUsed:\n{used}Free:\n{free}Fragmentation:\n{self.fragmentation()}\n"
+        u_blocks: list[Block] = self.used_blocks
+        u_blocks.sort(key=lambda block: block.id)
+        f_blocks: list[Block] = self.free_blocks
+        f_blocks.sort(key=lambda block: block.start_addr)
+        used: str = "".join([str(block) for block in u_blocks])
+        free: str = "".join([str(block) for block in f_blocks])
+        return f"Size: {self.size}\nUsed:\n{used}Free:\n{free}Fragmentation:\n{self.fragmentation():.6f}\n"
 
     def alloc(self, id: Id, size: Size, fn: core.algorithms.Algorithm) -> Result:
         block_i: Optional[int] = fn(size, self.free_blocks)

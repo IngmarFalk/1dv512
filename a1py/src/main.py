@@ -27,7 +27,6 @@ def did_occur(errors: dict[tuple[str,int], str], id: int) -> bool:
     return False
 
 def main():
-    # Read path from args
     path: str = sys.argv[1]
     data: list[str] = read_file(f"{path}.in")
     size, cmds = to_cmds(data)
@@ -37,15 +36,11 @@ def main():
         "WorstFit": core.algorithms.worst_fit,
     }
 
-    
-    for cmd in cmds:
-        print(cmd)
-
     out: str = ""
+    out_cnt: int = 0
     for name, fn in fns.items():
         instruction_cnt: int = 0
         errors: dict[tuple[str, int], str] = {}
-        out_cnt: int = 0
         memory: core.memory.Memory = core.memory.Memory(core.block.Size(size))
         for c in cmds:
             instruction_cnt += 1
@@ -64,6 +59,7 @@ def main():
                     cp += "Errors:\n" + "".join(errors.values()) + "\n" if len(errors) != 0 else "None\n"
                     with open(f"{path}.out{out_cnt}", "w") as f:
                         f.write(cp)
+                    out_cnt += 1
             match res:
                 case core.memory.Result.Ok:
                     continue
@@ -73,7 +69,6 @@ def main():
                     reason: str = "1" if did_occur(errors, c.get_id()) else "0"
                     errors[("D", c.get_id())] = f"D;{instruction_cnt};{reason}"
             
-        print(errors)
 
         out += f"{name}\n"
         out += str(memory)
@@ -82,8 +77,6 @@ def main():
     with open(f"{path}.out", "w") as f:
         f.write(out)
 
-    for line in read_file(f"{path}.out"):
-        print(line, end="")
 
 
 if __name__ == "__main__":
