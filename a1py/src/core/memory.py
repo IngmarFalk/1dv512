@@ -2,7 +2,14 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 import core
 import core.algorithms
+import enum
 from core.block import Block, Size, Address, Id
+
+
+class Result(enum.Enum):
+    Ok = "Ok"
+    Alloc = "Alloc"
+    Dealloc = "Dealloc"
 
 
 @dataclass
@@ -19,12 +26,12 @@ class Memory:
     def __str__(self) -> str:
         used: str = "".join([str(block) for block in self.used_blocks])
         free: str = "".join([str(block) for block in self.free_blocks])
-        return f"Size: {self.size}\nUsed:\n{used}Free:\n{free}Fragmentation:\n{self.fragmentation()}\n\n"
+        return f"Size: {self.size}\nUsed:\n{used}Free:\n{free}Fragmentation:\n{self.fragmentation()}\n"
 
-    def alloc(self, id: Id, size: Size, fn: core.algorithms.Algorithm) -> None:
+    def alloc(self, id: Id, size: Size, fn: core.algorithms.Algorithm) -> Result:
         block_i: Optional[int] = fn(size, self.free_blocks)
         if block_i is None:
-            raise ValueError("No free block large enough")
+            return Result.Alloc
 
         block: Block = self.free_blocks[block_i]
         self.free_blocks.remove(block)
@@ -33,19 +40,20 @@ class Memory:
             self.free_blocks.append(
                 block.free(Size(block.size - size), Address(block.start_addr + size))
             )
+        return Result.Ok
 
-    def dealloc(self, id: Id) -> None:
+    def dealloc(self, id: Id) -> Result:
         for block in self.used_blocks:
             if block.id == id:
                 for i, free_block in enumerate(self.free_blocks):
                     if free_block.can_merge(block.as_free()):
                         self.free_blocks[i] = free_block.merge(block.as_free())
                         self.used_blocks.remove(block)
-                        return
+                        return Result.Ok
                 self.used_blocks.remove(block)
                 self.free_blocks.append(block.as_free())
-                return
-        raise ValueError("Block not found")
+                return Result.Ok
+        return Result.Dealloc
 
     def compact(self) -> None:
 
