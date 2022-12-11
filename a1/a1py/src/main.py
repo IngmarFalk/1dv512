@@ -56,7 +56,7 @@ def main():
                     cp: str = copy.deepcopy(out)
                     cp += f"{name}\n"
                     cp += str(memory)
-                    cp += "Errors:\n" + "".join(errors.values()) + "\n" if len(errors) != 0 else "None\n"
+                    cp += "Errors:\n" + "".join(errors.values()) + "\n" if len(errors) != 0 else "Errors:\nNone\n"
                     with open(f"{path}.out{out_cnt}", "w") as f:
                         f.write(cp)
                     out_cnt += 1

@@ -21,6 +21,7 @@ const (
 	Alloc   Op = "A"
 	Dealloc Op = "D"
 	Compact Op = "C"
+	Output  Op = "O"
 )
 
 type Cmd struct {
@@ -47,6 +48,10 @@ func NewDealloc(blockID Id) Cmd {
 
 func NewCompact() Cmd {
 	return New(Compact, None, None)
+}
+
+func NewOutput() Cmd {
+	return New(Output, None, None)
 }
 
 type CmdList struct {

@@ -1,12 +1,12 @@
-FirstFit
-Size: 1000
-Used:
+Size:
+1000
+Used Blocks:
 0;0;99
 3;700;899
-Free:
+Free Blocks:
 100;699
 900;999
 Fragmentation:
-0.142857
+0.857143
 Errors:
 None

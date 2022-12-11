@@ -23,7 +23,7 @@ impl CQueue {
     pub fn enqueue(&mut self, p: Process) {
         if self.waiting.len() > 0 {
             let i = self.waiting.pop().unwrap();
-            self[i] = Some(p);
+            // self[i] = Some(p);
             return;
         }
 

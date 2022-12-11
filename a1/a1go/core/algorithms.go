@@ -1,16 +1,18 @@
 package core
 
-func FirstFit(size Size, blocks BlockList) int {
+import "errors"
+
+func FirstFit(size Size, blocks BlockList) (int, error) {
 	for i := 0; i < blocks.Len(); i++ {
 		block := blocks.Get(i)
 		if block.Size >= size {
-			return i
+			return i, nil
 		}
 	}
-	return -1
+	return -1, errors.New("no block large enough")
 }
 
-func BestFit(size Size, blocks BlockList) int {
+func BestFit(size Size, blocks BlockList) (int, error) {
 	best := -1
 	for i := 0; i < blocks.Len(); i++ {
 		block := blocks.Get(i)
@@ -20,10 +22,13 @@ func BestFit(size Size, blocks BlockList) int {
 			}
 		}
 	}
-	return best
+	if best == -1 {
+		return -1, errors.New("no block large enough")
+	}
+	return best, nil
 }
 
-func WorstFit(size Size, blocks BlockList) int {
+func WorstFit(size Size, blocks BlockList) (int, error) {
 	best := -1
 	for i := 0; i < blocks.Len(); i++ {
 		block := blocks.Get(i)
@@ -33,5 +38,8 @@ func WorstFit(size Size, blocks BlockList) int {
 			}
 		}
 	}
-	return best
+	if best == -1 {
+		return -1, errors.New("no block large enough")
+	}
+	return best, nil
 }

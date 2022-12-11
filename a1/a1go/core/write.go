@@ -1,10 +1,8 @@
-package rw
+package core
 
 import (
 	"os"
 	"strconv"
-
-	"github.com/ingmarrr/goa1/core"
 )
 
 func WriteFile(path string, data string) {
@@ -12,7 +10,7 @@ func WriteFile(path string, data string) {
 	check(err)
 }
 
-func CmdListToString(cmds core.CmdList) string {
+func CmdListToString(cmds CmdList) string {
 	var data string
 	for _, cmd := range cmds.Cmds {
 		data += CmdToString(cmd) + "\n"
@@ -20,10 +18,10 @@ func CmdListToString(cmds core.CmdList) string {
 	return data
 }
 
-func CmdToString(cmd core.Cmd) string {
-	if cmd.Op == core.Alloc {
+func CmdToString(cmd Cmd) string {
+	if cmd.Op == Alloc {
 		return "A;" + strconv.Itoa(int(cmd.BlockID)) + ";" + strconv.Itoa(int(cmd.Size))
-	} else if cmd.Op == core.Dealloc {
+	} else if cmd.Op == Dealloc {
 		return "D;" + strconv.Itoa(int(cmd.BlockID))
 	} else {
 		return "C"

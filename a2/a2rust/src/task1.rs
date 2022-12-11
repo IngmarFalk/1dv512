@@ -37,21 +37,6 @@ pub fn task1() {
         }));
     }
 
-    let s = Arc::new(Semaphore::binary());
-    let mut c2 = vec![];
-
-    for i in 0..2 {
-        let _s = Arc::clone(&s);
-        c2.push(thread::spawn(move || {
-            for _ in 0..10 {
-                let v = *_s;
-                v.wait();
-                print!("{}", (b'A' + i) as char);
-                _s.signal();
-            }
-        }));
-    }
-
     for t in c {
         t.join().unwrap();
     }

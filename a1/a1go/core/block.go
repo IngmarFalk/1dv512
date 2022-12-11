@@ -20,10 +20,10 @@ func Sub[U Size | Address, V Size | Address](a U, b V) U {
 }
 
 type Block struct {
-	Id         Id
-	Size       Size
-	Start_addr Address
-	End_addr   Address
+	Id        Id
+	Size      Size
+	StartAddr Address
+	EndAddr   Address
 }
 
 func NewFree(size Size, start Address) Block {
@@ -40,25 +40,25 @@ func (b *Block) IsFree() bool {
 
 func (b *Block) String() string {
 	if b.Id == Free {
-		return strconv.Itoa(int(b.Start_addr)) + ";" + strconv.Itoa(int(b.End_addr)) + "\n"
+		return strconv.Itoa(int(b.StartAddr)) + ";" + strconv.Itoa(int(b.EndAddr)) + "\n"
 	} else {
-		return strconv.Itoa(int(b.Id)) + ";" + strconv.Itoa(int(b.Start_addr)) + ";" + strconv.Itoa(int(b.End_addr)) + "\n"
+		return strconv.Itoa(int(b.Id)) + ";" + strconv.Itoa(int(b.StartAddr)) + ";" + strconv.Itoa(int(b.EndAddr)) + "\n"
 	}
 }
 
 func (b *Block) AsFree() Block {
-	return NewFree(b.Size, b.Start_addr)
+	return NewFree(b.Size, b.StartAddr)
 }
 
 func (b *Block) CanMerge(other Block) bool {
-	return b.Id == Free && other.Id == Free && (other.Start_addr == b.End_addr+1 || b.Start_addr == other.End_addr+1)
+	return b.Id == Free && other.Id == Free && (other.StartAddr == b.EndAddr+1 || b.StartAddr == other.EndAddr+1)
 }
 
 func (b *Block) Merge(other Block) Block {
-	if b.Start_addr < other.Start_addr {
-		return NewFree(Add(b.Size, other.Size), b.Start_addr)
+	if b.StartAddr < other.StartAddr {
+		return NewFree(Add(b.Size, other.Size), b.StartAddr)
 	} else {
-		return NewFree(Add(b.Size, other.Size), other.Start_addr)
+		return NewFree(Add(b.Size, other.Size), other.StartAddr)
 	}
 }
 
@@ -97,7 +97,7 @@ func (b *BlockList) FindFreeBlock(size Size) (int, bool) {
 
 func (b *BlockList) FindUsedBlock(addr Address) (int, bool) {
 	for i, block := range b.blocks {
-		if block.Id == Used && block.Start_addr <= addr && block.End_addr > addr {
+		if block.Id == Used && block.StartAddr <= addr && block.EndAddr > addr {
 			return i, true
 		}
 	}
