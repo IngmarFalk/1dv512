@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Simulation {
-    algorithm: Algorithm,
-    data: Data,
+    pub algorithm: Algorithm,
+    pub data: Data,
 }
 
 impl Simulation {
@@ -18,7 +18,7 @@ impl Simulation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Data {
     cylinders: usize,
     head: usize,
@@ -58,7 +58,10 @@ impl FromStr for Data {
             .parse()
             .map_err(|e| format!("Invalid direction: {}", e))?;
         let cylinders = lines
-            .map(|line| line.parse().map_err(|e| format!("Invalid cylinder: {}", e)))
+            .next()
+            .ok_or("No cylinders")?
+            .split(',')
+            .map(|cyl| cyl.parse().map_err(|e| format!("Invalid cylinder: {}", e)))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self::new(nrc, head, cylinders, Some(dir)))
     }
