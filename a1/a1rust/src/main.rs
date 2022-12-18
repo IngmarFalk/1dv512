@@ -6,7 +6,9 @@ pub mod cmd;
 pub mod memory;
 
 fn main() {
-    let path = "test";
+    let path = std::env::args()
+        .nth(1)
+        .expect("Please provide a path to the input file");
     let in_path = format!("{}.in", path);
     let data = std::fs::read_to_string(in_path).unwrap();
     let cmds = cmd::CmdVec::from_str(&data).unwrap();
@@ -20,7 +22,7 @@ fn main() {
     for (name, algo) in fns.iter() {
         let mut mem = memory.with_out_count();
         for cmd in cmds.iter() {
-            mem.exec(cmd, (*name, algo.clone()), path);
+            mem.exec(cmd, (*name, algo.clone()), &path);
         }
         memory = mem.with_out_count();
 

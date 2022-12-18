@@ -1,15 +1,32 @@
 use super::process::Process;
 
 #[derive(Debug, Clone)]
-pub struct CQueue {
+pub struct CQueue<const Max: usize> {
     head: usize,
     tail: usize,
     size: usize,
-    prcs: Vec<Option<Process>>,
+    prcs: [Option<Process>; Max],
     waiting: Vec<usize>,
 }
 
-impl CQueue {
+trait Index<T, const I: usize> {
+    fn get(&self) -> &T;
+}
+
+enum If<const Cond: bool> {}
+trait True {}
+impl True for If<true> {}
+
+// impl<T, const Len: usize, const I:usize> Index<T, I> for [T; Len]
+// where
+//     If<I < Len>: True,
+// {
+//     fn get(&self) -> &T {
+//         &self[I]
+//     }
+// }
+
+impl<const Max: usize> CQueue<Max> {
     pub fn new(size: usize) -> Self {
         Self {
             head: 0,
