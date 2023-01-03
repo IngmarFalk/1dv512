@@ -64,7 +64,7 @@ def main():
                 case core.memory.Result.Ok:
                     continue
                 case core.memory.Result.Alloc:
-                    errors[("A", c.get_id())] = f"A;{instruction_cnt};{sum([block.size for block in memory.free_blocks])}"
+                    errors[("A", c.get_id())] = f"A;{instruction_cnt};{max([block.size for block in memory.free_blocks])}"
                 case core.memory.Result.Dealloc:
                     reason: str = "1" if did_occur(errors, c.get_id()) else "0"
                     errors[("D", c.get_id())] = f"D;{instruction_cnt};{reason}"

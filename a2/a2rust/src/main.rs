@@ -1,8 +1,6 @@
 pub mod shared;
-mod task1;
-mod task2;
-mod task3;
+mod tasks;
 
 fn main() {
-    task1::task1();
+    tasks::task2::task2();
 }

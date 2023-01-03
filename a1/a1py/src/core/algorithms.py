@@ -17,7 +17,7 @@ def best_fit(size: Size, blocks: list[Block]) -> Optional[int]:
     best_i: Optional[int] = None
     for i, block in enumerate(blocks):
         if block.size >= size:
-            if best_i is None or blocks[best_i].size > block.size:
+            if not best_i or blocks[best_i].size > block.size:
                 best_i = i
     return best_i
 
@@ -26,6 +26,6 @@ def worst_fit(size: Size, blocks: list[Block]) -> Optional[int]:
     worst_i: Optional[int] = None
     for i, block in enumerate(blocks):
         if block.size >= size:
-            if worst_i is None or blocks[worst_i].size < block.size:
+            if not worst_i or blocks[worst_i].size < block.size:
                 worst_i = i
     return worst_i
