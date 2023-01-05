@@ -1,19 +1,19 @@
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
-pub struct Sem<const MAX: i16> {
-    mtx: Arc<Mutex<i16>>,
+pub struct Sem<const MAX: usize, V: Sized> {
+    mtx: Arc<Mutex<V>>,
 }
 
-impl<const MAX: i16> Sem<MAX> {
+impl<const RESOURCES: usize> Sem<RESOURCES, i16> {
     pub fn new() -> Self {
         Sem {
-            mtx: Arc::new(Mutex::new(0)),
+            mtx: Arc::new(Mutex::new(1)),
         }
     }
 
     pub fn from(val: i16) -> Self {
-        if val > MAX {
+        if val > RESOURCES as i16 {
             panic!("Value is greater than MAX");
         }
         Sem {
@@ -22,15 +22,22 @@ impl<const MAX: i16> Sem<MAX> {
     }
 
     pub fn wait(&self) {
-        while *self.mtx.lock().unwrap() < 0 {}
-        self.decr();
+        while *self.mtx.lock().unwrap() <= 0 {
+            // println!("Waiting...");
+            // std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+        *self.mtx.lock().unwrap() -= 1;
     }
 
     pub fn signal(&self) {
-        if *self.mtx.lock().unwrap() == MAX - 1 {
-            return *self.mtx.lock().unwrap() = 0;
+        *self.mtx.lock().unwrap() += 1;
+    }
+
+    pub fn next(&self) {
+        if *self.mtx.lock().unwrap() == RESOURCES as i16 {
+            return *self.mtx.lock().unwrap() = 1;
         }
-        self.incr();
+        *self.mtx.lock().unwrap() += 1;
     }
 
     pub fn set(&self, val: i16) {
@@ -49,11 +56,7 @@ impl<const MAX: i16> Sem<MAX> {
         *self.mtx.lock().unwrap()
     }
 
-    fn incr(&self) {
-        *self.mtx.lock().unwrap() += 1;
-    }
-
-    fn decr(&self) {
-        *self.mtx.lock().unwrap() -= 1;
+    pub fn as_idx(&self) -> usize {
+        *self.mtx.lock().unwrap() as usize - 1
     }
 }

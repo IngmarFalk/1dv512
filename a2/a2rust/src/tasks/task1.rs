@@ -7,7 +7,7 @@ use crate::shared;
 
 pub fn task1() {
     let mut handles = vec![];
-    let sem = Arc::new(shared::sem::Sem::<1>::from(1));
+    let sem = Arc::new(shared::sem::Sem::<1, i16>::from(1));
 
     for i in 0..2 {
         let _sem = Arc::clone(&sem);
